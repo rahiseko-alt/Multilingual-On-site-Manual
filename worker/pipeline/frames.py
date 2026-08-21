@@ -9,7 +9,6 @@ from worker.schemas.transcript import TranscriptData
 def compute_dhash(pil_img: Image.Image, hash_size: int = 8) -> str:
     """Compute difference hash (dHash) using pure PIL for perceptual deduplication."""
     resized = pil_img.convert("L").resize((hash_size + 1, hash_size), Image.Resampling.LANCZOS)
-    # Using byte values directly
     pixels = list(resized.tobytes())
     
     difference = []
@@ -41,65 +40,66 @@ def extract_and_deduplicate_frames(
     transcript: TranscriptData | None,
     output_dir: str,
     hash_threshold: int = 6,
+    max_frames: int = 30,
     output_json_path: str | None = None
 ) -> FrameData:
     v_path = Path(video_path).resolve()
     out_dir = Path(output_dir).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    candidates = set()
+    # Collect candidate timestamps per scene (scoped)
+    candidates_by_scene = []
     for s in scenes.scenes:
-        candidates.add(round(s.start + 0.1, 2))
-        candidates.add(round((s.start + s.end) / 2.0, 2))
-        candidates.add(round(max(s.start, s.end - 0.1), 2))
-
-    if transcript:
-        for seg in transcript.segments:
-            candidates.add(round((seg.start + seg.end) / 2.0, 2))
-
-    sorted_ts = sorted(list(candidates))
-    filtered_ts = []
-    for ts in sorted_ts:
-        if not filtered_ts or (ts - filtered_ts[-1] >= 0.8):
-            filtered_ts.append(ts)
+        scene_ts = [
+            round(s.start + 0.1, 2),
+            round((s.start + s.end) / 2.0, 2),
+            round(max(s.start, s.end - 0.1), 2)
+        ]
+        if transcript:
+            for seg in transcript.segments:
+                if s.start <= seg.start <= s.end or s.start <= seg.end <= s.end:
+                    scene_ts.append(round((seg.start + seg.end) / 2.0, 2))
+        candidates_by_scene.append(sorted(list(set(scene_ts))))
 
     cap = cv2.VideoCapture(str(v_path))
-    
     extracted_frames = []
-    prev_hashes = []
 
-    for i, ts in enumerate(filtered_ts, start=1):
-        cap.set(cv2.CAP_PROP_POS_MSEC, ts * 1000.0)
-        ret, frame_bgr = cap.read()
-        if not ret or frame_bgr is None:
-            continue
+    for scene_idx, scene_ts_list in enumerate(candidates_by_scene, start=1):
+        if len(extracted_frames) >= max_frames:
+            break
 
-        frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-        pil_img = Image.fromarray(frame_rgb)
-        cur_phash = compute_dhash(pil_img)
-
-        is_duplicate = False
-        for ph in prev_hashes:
-            if hamming_distance(cur_phash, ph) < hash_threshold:
-                is_duplicate = True
+        scene_hashes = []
+        for ts in scene_ts_list:
+            if len(extracted_frames) >= max_frames:
                 break
 
-        if is_duplicate:
-            continue
+            cap.set(cv2.CAP_PROP_POS_MSEC, ts * 1000.0)
+            ret, frame_bgr = cap.read()
+            if not ret or frame_bgr is None:
+                continue
 
-        prev_hashes.append(cur_phash)
-        frame_id = f"frame_{len(extracted_frames) + 1:03d}"
-        file_path = out_dir / f"{frame_id}.jpg"
-        cv2.imwrite(str(file_path), frame_bgr, [int(cv2.IMWRITE_JPEG_QUALITY), 90])
+            frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+            pil_img = Image.fromarray(frame_rgb)
+            cur_phash = compute_dhash(pil_img)
 
-        extracted_frames.append(
-            FrameItem(
-                id=frame_id,
-                timestamp=ts,
-                path=str(file_path),
-                phash=cur_phash
+            # Scene-scoped deduplication: only compare within the local scene/window
+            is_dup = any(hamming_distance(cur_phash, ph) < hash_threshold for ph in scene_hashes)
+            if is_dup:
+                continue
+
+            scene_hashes.append(cur_phash)
+            frame_id = f"frame_{len(extracted_frames) + 1:03d}"
+            file_path = out_dir / f"{frame_id}.jpg"
+            cv2.imwrite(str(file_path), frame_bgr, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
+
+            extracted_frames.append(
+                FrameItem(
+                    id=frame_id,
+                    timestamp=ts,
+                    path=str(file_path),
+                    phash=cur_phash
+                )
             )
-        )
 
     cap.release()
     data = FrameData(frames=extracted_frames)

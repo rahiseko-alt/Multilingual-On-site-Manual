@@ -36,12 +36,30 @@ video2doc-multilang/
 
 ---
 
-## クイックスタート (CLI Engine)
+## クイックスタート
 
-### 1. 依存ライブラリのインストール
+### 🚀 最速起動: Docker Compose（推奨・環境構築不要）
 ```bash
-pip install -r requirements.txt
+# ワンコマンドでWebサーバーとUIを起動
+docker compose up --build
 ```
+起動後、ブラウザで **`http://localhost:8000`** にアクセスすると、直感的なWeb画面から動画を投入して多言語マニュアルを生成できます。
+
+---
+
+### 💻 ローカル直接起動 (FastAPI Web UI)
+```bash
+# 依存ライブラリのインストール
+pip install -r requirements.txt
+
+# Webサーバーの起動
+uvicorn apps.api.main:app --reload --port 8000
+```
+ブラウザで **`http://localhost:8000`** にアクセス。
+
+---
+
+### ⌨️ CLI でのバッチ実行
 
 ### 2. テストの実行
 ```bash

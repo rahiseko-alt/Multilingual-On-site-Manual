@@ -4,7 +4,7 @@ from worker.providers.translation.base import TranslationProvider
 from worker.schemas.glossary import GlossaryData
 from worker.schemas.manual import ManualMaster, TranslatedManual, TranslatedStep
 
-def protect_glossary_terms(text: str, glossary: GlossaryData) -> tuple[str, dict[str, str]]:
+def protect_glossary_terms(text: str, glossary: GlossaryData | None) -> tuple[str, dict[str, any]]:
     if not text or not glossary or not glossary.terms:
         return text, {}
 
@@ -15,7 +15,6 @@ def protect_glossary_terms(text: str, glossary: GlossaryData) -> tuple[str, dict
         if not term.source:
             continue
         placeholder = f"{{{{TERM_{i:03d}}}}}"
-        # If term is in text, replace
         if term.source in protected_text:
             placeholder_map[placeholder] = term
             protected_text = protected_text.replace(term.source, placeholder)
@@ -30,7 +29,6 @@ def restore_glossary_terms(translated_text: str, placeholder_map: dict[str, any]
     for placeholder, term in placeholder_map.items():
         if placeholder in result:
             if not term.translate:
-                # Keep original source
                 replacement = term.source
             else:
                 replacement = term.translation.get(target_lang, term.source)
@@ -49,37 +47,39 @@ def translate_manual(
     results = {}
 
     for t_lang in target_languages:
-        # Translate title
         p_title, p_map_title = protect_glossary_terms(manual_master.manual.title, glossary)
         trans_title_raw = provider.translate(p_title, source_lang, t_lang)
         final_title = restore_glossary_terms(trans_title_raw, p_map_title, t_lang)
 
         translated_steps = []
         for step in manual_master.manual.steps:
-            # Step title
             p_st, p_map_st = protect_glossary_terms(step.title, glossary)
             t_st_raw = provider.translate(p_st, source_lang, t_lang)
             final_st = restore_glossary_terms(t_st_raw, p_map_st, t_lang)
 
-            # Step instruction
             p_inst, p_map_inst = protect_glossary_terms(step.instruction, glossary)
             t_inst_raw = provider.translate(p_inst, source_lang, t_lang)
             final_inst = restore_glossary_terms(t_inst_raw, p_map_inst, t_lang)
 
-            # Warning if any
             final_warn = None
             if step.warning:
                 p_warn, p_map_warn = protect_glossary_terms(step.warning, glossary)
                 t_warn_raw = provider.translate(p_warn, source_lang, t_lang)
                 final_warn = restore_glossary_terms(t_warn_raw, p_map_warn, t_lang)
 
+            # Preserve full evidence, media, equipment, score, and review status
             translated_steps.append(
                 TranslatedStep(
                     step_id=step.step_id,
                     order=step.order,
                     title=final_st,
                     instruction=final_inst,
-                    warning=final_warn
+                    warning=final_warn,
+                    equipment=step.equipment,
+                    media=step.media,
+                    evidence=step.evidence,
+                    evidence_score=step.evidence_score,
+                    status=step.status
                 )
             )
 
