@@ -2,10 +2,38 @@ import subprocess
 from pathlib import Path
 import cv2
 from PIL import Image
-import imagehash
 from worker.schemas.frames import FrameData, FrameItem
 from worker.schemas.scene import SceneData
 from worker.schemas.transcript import TranscriptData
+
+def compute_dhash(pil_img: Image.Image, hash_size: int = 8) -> str:
+    """Compute difference hash (dHash) using pure PIL for perceptual deduplication."""
+    resized = pil_img.convert("L").resize((hash_size + 1, hash_size), Image.Resampling.LANCZOS)
+    # Using byte values directly
+    pixels = list(resized.tobytes())
+    
+    difference = []
+    for row in range(hash_size):
+        for col in range(hash_size):
+            pixel_left = pixels[row * (hash_size + 1) + col]
+            pixel_right = pixels[row * (hash_size + 1) + col + 1]
+            difference.append(pixel_left > pixel_right)
+    
+    decimal_value = 0
+    hex_string = []
+    for index, val in enumerate(difference):
+        if val:
+            decimal_value += 2 ** (index % 8)
+        if (index % 8) == 7:
+            hex_string.append(hex(decimal_value)[2:].rjust(2, "0"))
+            decimal_value = 0
+    return "".join(hex_string)
+
+def hamming_distance(hash1_hex: str, hash2_hex: str) -> int:
+    """Calculate hamming distance between two hex hashes."""
+    val1 = int(hash1_hex, 16)
+    val2 = int(hash2_hex, 16)
+    return bin(val1 ^ val2).count("1")
 
 def extract_and_deduplicate_frames(
     video_path: str,
@@ -19,7 +47,6 @@ def extract_and_deduplicate_frames(
     out_dir = Path(output_dir).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Collect candidate timestamps
     candidates = set()
     for s in scenes.scenes:
         candidates.add(round(s.start + 0.1, 2))
@@ -30,16 +57,13 @@ def extract_and_deduplicate_frames(
         for seg in transcript.segments:
             candidates.add(round((seg.start + seg.end) / 2.0, 2))
 
-    # Sort & remove very close timestamps (< 0.8s)
     sorted_ts = sorted(list(candidates))
     filtered_ts = []
     for ts in sorted_ts:
         if not filtered_ts or (ts - filtered_ts[-1] >= 0.8):
             filtered_ts.append(ts)
 
-    # Extract frames using ffmpeg / OpenCV
     cap = cv2.VideoCapture(str(v_path))
-    fps = cap.get(cv2.CAP_PROP_FPS) or 25.0
     
     extracted_frames = []
     prev_hashes = []
@@ -50,15 +74,13 @@ def extract_and_deduplicate_frames(
         if not ret or frame_bgr is None:
             continue
 
-        # Convert to PIL for hashing
         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
         pil_img = Image.fromarray(frame_rgb)
-        cur_phash = imagehash.phash(pil_img)
+        cur_phash = compute_dhash(pil_img)
 
-        # Deduplication check
         is_duplicate = False
         for ph in prev_hashes:
-            if cur_phash - ph < hash_threshold:
+            if hamming_distance(cur_phash, ph) < hash_threshold:
                 is_duplicate = True
                 break
 
@@ -74,8 +96,8 @@ def extract_and_deduplicate_frames(
             FrameItem(
                 id=frame_id,
                 timestamp=ts,
-                path=str(file_path.relative_to(out_dir.parent) if out_dir.parent in file_path.parents else file_path),
-                phash=str(cur_phash)
+                path=str(file_path),
+                phash=cur_phash
             )
         )
 
