@@ -16,8 +16,21 @@
 
 ---
 
+## 入力契約 (Input Contract)
+Criticを呼び出す際は、必ず以下の6要素を構造化して渡すこと（全文や不要なチャット履歴は渡さない）。
+```text
+1. GOAL: [今回何を実現するか]
+2. ACCEPTANCE: [受入基準・期待される挙動]
+3. GAP: [新しく実装・変更した最小差分]
+4. CHANGED FILES: [変更ファイル一覧]
+5. DIFF: [git diff]
+6. MECHANICAL CHECK RESULT: [Lint / Typecheck / Test の実行結果]
+```
+
+---
+
 ## 確認項目 (Evaluation Criteria)
-1. **WRONG GOAL**: 本来のGoal・要求を外していないか。必要なフローが抜けていないか。別の問題を解いていないか。
+1. **WRONG GOAL / MISSED ACCEPTANCE**: 本来のGoal・受入基準を外していないか。必要なフローが抜けていないか。別の問題を解いていないか。
 2. **WRONG APPROACH**: 既存解を無視した再実装（車輪の再発明）、不適切な技術選択、過剰実装・不要な抽象化がないか。
 3. **REAL BUG**: バグ、Regression、重要Edge Case、データ損失、競合状態、権限漏れがないか。
 
@@ -30,8 +43,8 @@
 
 以下の変更について重大な問題だけ確認してください。
 
-1. WRONG GOAL
-本来のGoal・要求を外していないか。
+1. WRONG GOAL / MISSED ACCEPTANCE
+本来のGoal・受入基準を外していないか。
 
 2. WRONG APPROACH
 既存解を無視した再実装、
@@ -39,24 +52,20 @@
 過剰実装がないか。
 
 3. REAL BUG
-Bug、Regression、重要Edge Caseがないか。
+Bug、Regression、重要Edge Case、セキュリティ脆弱性がないか。
 
 コードを変更しないでください。
-
-リファクタリングしないでください。
-
+リファクタリングを要求しないでください。
 代替実装を書かないでください。
 
-問題を発見した場合のみ、
+問題を発見した場合のみ、以下を返してください:
+- Severity: (Critical / High / Medium)
+- Category: (Wrong Goal / Wrong Approach / Real Bug)
+- Issue: (簡潔な問題の説明)
+- Evidence: (コード・diff内の根拠行)
+- Expected Behavior: (期待される動作)
 
-Severity
-Issue
-Evidence
-Expected behavior
-
-を返してください。
-
-問題がなければ、
+重大な問題がなければ、
 
 重大問題なし
 

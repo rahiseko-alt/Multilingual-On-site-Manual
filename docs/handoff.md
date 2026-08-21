@@ -8,26 +8,21 @@
 ---
 
 ## 1. 今回やったこと (Completed in this session)
-- 仕様書「Video2Doc MultiLang v1.0 実装仕様書」に基づき、リポジトリ構成を初期化（Phase 0）。
-- Pydantic スキーマ群（`worker/schemas/`）を定義:
-  - `transcript.py`, `scene.py`, `frames.py`, `vision.py`, `evidence.py`, `manual.py`, `glossary.py`
-- Provider 抽象化（`worker/providers/`）を実装:
-  - `StorageProvider` (Local), `TranscriptionProvider` (FasterWhisper CPU/int8, Mock)
-  - `VisionProvider` (LlamaCpp Qwen3-VL-2B GGUF, Rule-based), `TranslationProvider` (CTranslate2 M2M100, Mock)
-- コアパイプライン（`worker/pipeline/`）を実装（Phase 1 〜 Phase 6）:
-  - `validation.py`, `audio.py`, `transcription.py`, `scenes.py`, `frames.py` (dHash 重複排除), `vision.py`, `evidence.py`, `segmentation.py`, `manual.py`, `translation.py`, `rendering.py`
-- Jinja2 テンプレート（`templates/manual.html.j2`, `templates/manual.md.j2`）を作成。
-- CLI E2E スクリプト `scripts/run_pipeline.py` を実装し、テスト用サンプル動画によるパイプライン実行・全生成物（JSON/HTML/MD/PDF）の生成を実証（Phase 7）。
-- 単体テスト・E2Eテスト（`pytest tests/`）を実装し、全テストパスを確認。
+- 敵対的レビューのフィードバックを受け、クロスエージェント共通Harness仕様の抜本的改善を実施。
+- `AGENTS.md`: 
+  - Git安全性改善（`git add -A` 禁止、安全なステージング規約、Push Gate導入）
+  - リスク競合解決規則（最上位Level採用、領域優先）および強制Level 3キーワード定義
+  - リスク自己判定ゲート（Risk Gate）の追加
+  - `Reuse First, Qualify Before Adopt`（採用前審査5項目）の追加
+  - EXPLOREへの `ACCEPTANCE`（受入基準）必須化
+  - 外部事実の信頼度表現（External Evidence）の適正化
+- `prompts/independent-critic.md`: 入力契約（Input Contract: 6要素固定）および受入基準チェック（WRONG GOAL / MISSED ACCEPTANCE）の明文化。
+- `prompts/independent-verifier.md`: 二段構え検証（再現検証 ＋ 独自追加検証1〜3件）プロセスの導入。
+- `.agents/skills/session-checkout/SKILL.md`: `git add -A` の廃止、変更対象pathのみのステージングとPush Gateの追加。
 
 ## 2. 現在の状態 (Current State)
-- **CLI Engine & AI Pipeline (Phase 0 〜 Phase 7)** が完全に稼働可能。
-- `pytest tests/` (3 tests) All Passed。
-- `output/` に `manual_master.json`, `evidence.json`, `manual_vi.json`, `manual_id.json`, `manual.html`, `manual.md`, `manual.pdf`, `frames/*.jpg`, `audio.wav` が出力実証済み。
+- Harnessルール、Critic/Verifierプロンプト、チェックアウトスキルがクロスエージェント対応の堅牢な仕様に改訂完了。
 
 ## 3. 次回やること (Next Steps)
-- Phase 8: FastAPI バックエンドの構築（CLI Pipeline を Service として統合）
-- Phase 9: Celery & Redis による非同期 Worker 処理
-- Phase 10: PostgreSQL & SQLAlchemy によるマルチテナントデータモデル・Alembic マイグレーション
-- Phase 11: React + Vite による PWA フロントエンド実装
-- Phase 12: マルチテナント・SaaS ハードニング
+- Video2Doc MultiLang の CLI Engine パイプライン実装および各プロバイダーの実装・テスト。
+- Phase 8〜12（FastAPI, Celery/Redis, PostgreSQL, PWA, SaaSハードニング）の順次着手。

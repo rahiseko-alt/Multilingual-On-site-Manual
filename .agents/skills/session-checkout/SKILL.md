@@ -24,9 +24,13 @@ description: >-
 3. **失敗事例の記録 (Append Failures if applicable)**:
    - 作業中にエラー、コマンド失敗、バグ、誤ったアプローチなどの失敗が発生し解決した場合は、[`docs/failures.md`](../../docs/failures.md) の末尾に追記する (Append-Only)。
 
-4. **Git コミット & プッシュ (Commit & Push)**:
-   - 不要ファイルやシークレットが混入していないか `git status` で確認する。
-   - `git add -A`
-   - `git commit -m "..."`
-   - `git push origin <branch>`
+4. **安全なGitステージング & コミット (Safe Stage & Commit)**:
+   - 不要ファイルやシークレットが混入していないか `git status --short` および `git diff --name-only` で確認する。
+   - `git add -A` は**禁止**。今回の作業スコープに合致する対象ファイルのみ `git add -- <path>` でステージングする。
+   - コミットメッセージを作成しコミット: `git commit -m "..."`
+
+5. **プッシュ判定 (Push Gate)**:
+   - default branch (main/master) への自動 push は行わない。
+   - 作業ブランチ、upstream、未同期の他者変更がないか確認する。
+   - ユーザーからの明示的な指示またはCI連携要件がある場合のみ `git push` を実行する。
    - *(注意: PR作成やマージはユーザーからの明示的な指示がある場合のみ行う)*

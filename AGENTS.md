@@ -42,17 +42,25 @@ LEVEL D: REPOSITORY-SPECIFIC RULES (プロジェクト固有ルール)
 すべての開発タスクにおける基本原則。
 
 ```text
-1. Goalを確認する
+1. GoalとAcceptance (受入基準) を確認する
 2. repository内を先に探す (Search First)
-3. Library / Framework / SDK / API / OSS / SaaS / 特化AIを探す (Reuse First)
+3. Library / Framework / SDK / API / OSS / SaaS / 特化AIを探し、採用前に審査する (Reuse First, Qualify Before Adopt)
 4. ExistingとGoalの差分をGapとして定義する (Define the Gap)
 5. Gapだけを実装する (Build Only the Gap)
 6. 不要な抽象化をしない (No Unnecessary Abstraction)
 7. 将来用途だけの実装をしない (No Speculative Implementation)
 8. 変更範囲を必要最小限にする (Minimum Change)
 9. 機械判定できるものは機械に任せる (Mechanical Check First)
-10. 最後は実際に動いた事実で証明する (Runtime Evidence)
+10. 最後は外部の客観的事実で証明する (External Evidence First)
 ```
+
+### 採用前審査 (Qualify Before Adopt)
+外部OSS / ライブラリ / SaaS / SDK を採用する際は、以下の5点を事前に確認する（全候補ではなく実際に採用する候補のみ対象）。
+- **License**: 商用・改変利用可能か
+- **Maintenance**: 最終更新日、メンテナの活動状況
+- **Security**: 既知の脆弱性、不要なパーミッション要求
+- **Compatibility**: ランタイム（Node/Python/CPU環境）との適合性
+- **Data handling**: 生データ・顧客データの意図せぬ外部送信がないか
 
 ### デフォルト鉄板構成 (Default Golden Stack)
 新規構築や技術選定に特段の指定がない場合は、以下の**鉄板構成**をデフォルトとする。
@@ -85,12 +93,29 @@ EXPLORE  -->  BUILD  -->  VERIFY
 
 ## 1. リスクレベル判定 (Risk Levels)
 
+### 競合解決規則 (Conflict Resolution Rule)
+> **複数のRisk Level条件に該当する場合、常に最も高いLevelを採用する。変更量（行数）より変更領域・影響範囲を優先する。**
+> （例: 認可コード・マイグレーションの1行修正は Level 0 ではなく **Level 3**）
+
+### 強制Level 3 キーワード/領域 (Mandatory Level 3 Areas)
+以下のいずれかに関わる変更は無条件で **Level 3** とする。
+`auth`, `payment`, `migration`, `data deletion`, `secrets`, `permission`, `production`
+
 | Level | 種別 | 対象例 | 適用フロー |
 |---|---|---|---|
-| **Level 0** | **TRIVIAL** | typo, コピー修正, CSS微調整, 単純rename, コメント修正, 1行バグ修正 | `BUILD` → `VERIFY` (EXPLORE省略可) |
+| **Level 0** | **TRIVIAL** | typo, コピー修正, CSS微調整, 単純rename, コメント修正（※強制L3領域除く） | `BUILD` → `VERIFY` (EXPLORE省略可) |
 | **Level 1** | **NORMAL** | 単一API, 小機能, 局所バグ修正, 既存コンポーネントの軽微拡張 | `EXPLORE` → `BUILD` → `MECHANICAL CHECK` → `VERIFY` |
-| **Level 2** | **IMPORTANT** | 新機能追加, 複数ファイル変更, State管理, DB設計/クエリ, 外部API連携, 既存仕様変更, 重要ビジネスロジック | `EXPLORE` → `FAILURE MATCH` → `BUILD` → `MECHANICAL CHECK` → `INDEPENDENT CRITIC` → `WRITER FIX` → `VERIFY` |
-| **Level 3** | **CRITICAL** | Auth/認可, 決済/課金, DBマイグレーション, セキュリティ基盤, データ削除, 秘密情報/クレデンシャル | `EXPLORE` → `FAILURE MATCH` → `BUILD` → `MECHANICAL CHECK` → `INDEPENDENT CRITIC` → `WRITER FIX` → `AUTOMATED TEST` → `RUNTIME VERIFY` → `INDEPENDENT VERIFIER` |
+| **Level 2** | **IMPORTANT** | 新機能追加, 複数ファイル変更, State管理, DB設計/クエリ, 外部API連携, 既存仕様変更, 重要ビジネスロジック, **新規外部依存追加 (実行時/サーバー/データ処理)** | `EXPLORE` → `FAILURE MATCH` → `BUILD` → `MECHANICAL CHECK` → `INDEPENDENT CRITIC` → `WRITER FIX` → `VERIFY` |
+| **Level 3** | **CRITICAL** | **強制L3領域** (Auth/認可, 決済/課金, DBマイグレーション, セキュリティ基盤, データ削除, 秘密情報/クレデンシャル, 本番インフラ) | `EXPLORE` → `FAILURE MATCH` → `BUILD` → `MECHANICAL CHECK` → `INDEPENDENT CRITIC` → `WRITER FIX` → `AUTOMATED TEST` → `RUNTIME VERIFY` → `INDEPENDENT VERIFIER` |
+
+### リスク自己判定ゲート (Risk Gate)
+BUILD 着手前に、必ず以下の Risk Gate を出力し、判定の誤分類（過小評価）を防止する。
+```text
+RISK GATE:
+- TRIGGERS: [該当する条件・キーワードを列挙]
+- MANDATORY L3 CHECK: [YES / NO]
+- FINAL RISK LEVEL: [Level 0 / 1 / 2 / 3]
+```
 
 ---
 
@@ -98,11 +123,15 @@ EXPLORE  -->  BUILD  -->  VERIFY
 
 ### STEP 1: EXPLORE (探索と差分定義)
 - **目的**: 何を作るべきかではなく、**何だけを作ればよいか (GAP)** を特定する。
-- **出力形式** (巨大なDiscovery Reportは作らない。原則この3点のみ):
+- **出力形式** (巨大なDiscovery Reportは作らない。原則以下の構成):
   ```text
-  GOAL:     [今回何を実現するか]
-  EXISTING: [リポジトリ内・外部OSS等で既に存在・利用可能なもの]
-  GAP:      [今回新しく実装・変更する最小差分]
+  GOAL:        [今回何を実現するか]
+  ACCEPTANCE:  [完了を判定する客観的な受入基準・期待される挙動]
+  EXISTING:    [リポジトリ内・外部OSS等で既に存在・利用可能なもの]
+  GAP:         [今回新しく実装・変更する最小差分]
+  (必要時のみ)
+  NON-GOAL:    [今回あえてやらないこと]
+  CONSTRAINT:  [技術的・設計的制約]
   ```
 - **省略条件**: 変更内容を1文で説明でき、既存設計を変更しない場合（Level 0）はEXPLOREを省略可能。
 
@@ -137,8 +166,18 @@ EXPLORE  -->  BUILD  -->  VERIFY
 - **目的**: 作成者 (Writer) が気付かなかった重大問題を発見する。
 - **トリガー**: Level 2 / Level 3 の変更時
 - **担当**: 独立した目線を持つ `independent-critic` (フレッシュコンテキスト)
+- **入力契約 (Input Contract)**:
+  Criticには必ず以下の固定項目を渡す。
+  ```text
+  1. GOAL
+  2. ACCEPTANCE (受入基準)
+  3. GAP (最小差分)
+  4. CHANGED FILES (変更ファイル一覧)
+  5. DIFF (git diff)
+  6. MECHANICAL CHECK RESULT (テスト・Lint実行結果)
+  ```
 - **確認項目 (3点のみ)**:
-  1. `WRONG GOAL`: 本来の要求・UXを外していないか、必要なフローが抜けていないか、別の問題を解いていないか
+  1. `WRONG GOAL / MISSED ACCEPTANCE`: 本来の要求・受入基準を外していないか、必要なフローが抜けていないか、別の問題を解いていないか
   2. `WRONG APPROACH`: 既存解/OSSの車輪の再発明、不適切な技術選択、過剰実装・不要な抽象化がないか
   3. `REAL BUG`: Regression, データ損失, 状態不整合, Race Condition, 権限漏れ, Security, クラッシュ
 - **制約**: Critic自身はコードを書かない。リファクタリングを要求しない。代案実装を書かない。
@@ -147,17 +186,19 @@ EXPLORE  -->  BUILD  -->  VERIFY
 ---
 
 ### STEP 5: REAL VERIFICATION (外部事実による実証)
-- **原則**: 自己申告の推論ではなく、外部事実 (Runtime Evidence) で完了を証明する。
-- **証拠の強さ**:
-  `AI Reasoning < Code Review < Automated Test < Runtime Evidence`
+- **原則**: 自己申告の推論ではなく、外部事実 (External Evidence) で完了を証明する。
+- **証拠の信頼度**:
+  `AI推論 (Reasoning) < コード査読 (Review) < 客観的外部証拠 (External Evidence: Automated Tests / Runtime Verification / CI)`
 - **対象別検証方法**:
   - **UI / Web**: 実ブラウザ / Playwright等での実操作と表示結果
   - **API**: 実際のHTTPリクエスト/レスポンスとDB状態
   - **Database**: マイグレーション実行、読み書き、ロールバック、互換性
   - **Auth / 権限**: 許可される正常系と**拒否されるべき異常系**の双方案件
   - **File / Batch**: 実ファイルの入出力処理と生成された成果物の内容検証
-- **INDEPENDENT VERIFIER**:
-  - Level 3 または重要な公開・完了判定時に稼働。完了報告のコマンド・検証手順を再実行し、外部事実を確認する。
+- **INDEPENDENT VERIFIER (二段構え検証)**:
+  - Level 3 または重要な公開・完了判定時に稼働。
+  - **A. 再現検証**: Writerが報告した検証手順・テストコマンドを再実行し客観的事実を確認。
+  - **B. 独自追加検証**: Goal / Acceptance / Diff から、Verifier自身が必要と判断したエッジケース・異常系・境界値テストを1〜3件独自に追加実行する。
 
 ---
 
@@ -182,7 +223,13 @@ EXPLORE  -->  BUILD  -->  VERIFY
 ### セッション終了 (Out)
 1. `docs/handoff.md` を更新する（今回やったこと、現在の状態、次回やること）。
 2. 失敗が発生・解決した場合は `docs/failures.md` に追記する (append-only)。
-3. コミット & プッシュ（PR / マージは指示がある場合のみ）。
+3. **安全なGitステージング & コミット**:
+   - `git add -A` は**原則禁止**。
+   - `git status --short` および `git diff --name-only` で変更ファイルを確認。
+   - 今回の作業スコープに合致する対象ファイルのみ `git add -- <path>` でステージングする。
+4. **プッシュ判定 (Push Gate)**:
+   - default branch (main/master) への安易な自動pushは行わない。
+   - upstream、ブランチ名、他者変更の有無、ユーザーからの明示的な指示またはCI連携要件を確認した上でpushする。
 
 ---
 
