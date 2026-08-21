@@ -5,8 +5,10 @@ services:
     dockerfilePath: ./Dockerfile
     plan: free
     region: singapore
+    healthCheckPath: /health
+    autoDeploy: true
     envVars:
-      - key: PORT
-        value: 8000
       - key: APP_ENV
         value: production
+      - key: PYTHONUNBUFFERED
+        value: "1"

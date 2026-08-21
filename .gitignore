@@ -40,6 +40,7 @@ yarn-debug.log*
 !.vscode/extensions.json
 *.swp
 *.swo
+*.db
 
 # Outputs & Storage
 storage/
