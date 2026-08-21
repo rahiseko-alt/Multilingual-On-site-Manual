@@ -46,3 +46,7 @@ storage/
 output/
 output_test/
 sample_panel.jpg
+# Media files in fixtures
+fixtures/sample/*.mp4
+fixtures/sample/*.wav
+fixtures/sample/*.jpg

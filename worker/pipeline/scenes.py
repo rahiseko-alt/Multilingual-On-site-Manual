@@ -25,10 +25,8 @@ def detect_scenes(video_path: str, duration: float, output_json_path: str | None
                     )
                 )
     except Exception:
-        # Fallback if PySceneDetect is unavailable or encounters error
         pass
 
-    # Fallback to uniform chunks if no scenes detected
     if not scenes:
         chunk_len = 5.0
         cur = 0.0
