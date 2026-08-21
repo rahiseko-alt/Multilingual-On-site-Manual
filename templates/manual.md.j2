@@ -1,0 +1,28 @@
+# {{ manual.title }}
+
+*言語: {{ manual.source_language }} | 生成日時: {{ generated_at }}*
+
+---
+
+{% for step in manual.steps %}
+### Step {{ step.order }}: {{ step.title }}
+
+{% if step.media.primary_frame_id and frames_map and step.media.primary_frame_id in frames_map %}
+![Step {{ step.order }} Image]({{ frames_map[step.media.primary_frame_id] }})
+{% endif %}
+
+**作業手順:**
+{{ step.instruction }}
+
+{% if step.warning %}
+> ⚠️ **注意:** {{ step.warning }}
+{% endif %}
+
+{% if step.equipment %}
+**対象物/機器:** {{ step.equipment | join(', ') }}
+{% endif %}
+
+*根拠情報: 動画時間 {{ "%.1f"|format(step.evidence.video_start) }}s 〜 {{ "%.1f"|format(step.evidence.video_end) }}s (Score: {{ "%.2f"|format(step.evidence_score) }})*
+
+---
+{% endfor %}
