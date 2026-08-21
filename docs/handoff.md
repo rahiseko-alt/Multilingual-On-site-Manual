@@ -8,28 +8,28 @@
 ---
 
 ## 1. 今回やったこと (Completed in this session)
-- **Phase 8 & 9 & 10 (FastAPI Backend API, SaaS Data Models, Async Job Service)** を実装・検証:
-  - **SaaS データモデル (`apps/api/app/models/`)**:
-    - `Tenant`, `User`, `TenantMember`, `Project`, `VideoAsset`, `ProcessingJob`, `Manual`, `ManualVersion`, `Glossary`, `GlossaryTerm`, `ExportAsset`
-  - **認証 & テナント分離 (`apps/api/app/core/`, `api/deps.py`)**:
-    - JWT 認証、パスワード bcrypt ハッシュ、テナント権限検証（AC-012: 異なるテナントのProjectアクセス拒否を実証）。
-  - **非同期 Job & サービス層 (`apps/api/app/services/job_service.py`)**:
-    - `POST /api/projects/{id}/process` は即座に **HTTP 202 Accepted** を返却（AC-013）。
-    - バックグラウンドで `worker/pipeline/` を呼び出し、進捗率・ステータスを `ProcessingJob` に反映。
-  - **仕様書第25条準拠の全 REST API (`apps/api/app/api/`)**:
-    - `/auth`, `/projects`, `/projects/{id}/video`, `/projects/{id}/process`, `/jobs/{id}`, `/projects/{id}/manual`, `/projects/{id}/translations`, `/projects/{id}/glossary`, `/projects/{id}/exports`
-  - **テスト整備**:
-    - `pytest tests/` (7 tests) 全件合格。
+- **Phase 11 (PWA Frontend - React + TypeScript + Vite) の実装**:
+  - **PWA App Shell & ServiceWorker**:
+    - `public/manifest.webmanifest`, `public/sw.js` によるオフライン App Shell キャッシュ。
+  - **API クライアント & 認証コンテキスト**:
+    - `src/api/client.ts`, `src/context/AuthContext.tsx`
+  - **画面実装**:
+    - `LoginPage`: 認証・ログイン
+    - `ProjectsPage`: プロジェクト一覧 & 新規マニュアル作成モーダル (動画アップロード・言語選択)
+    - `ProcessingPage`: 仕様書第28条準拠の5段階親しみやすい進捗インジケーター (1.音声解析 2.場面抽出 3.作業内容解析 4.マニュアル作成 5.翻訳)
+    - `ManualEditorPage`: Human Review エディタ (画像、タイトル、手順、警告、Evidence スコア & `needs_review` バナー表示)
+    - `TranslationsPage`: 多言語 (ベトナム語・インドネシア語) 翻訳確認・編集
+    - `ExportPage`: HTML / Markdown / PDF ドキュメントエクスポート & ダウンロード
+  - **ビルド & テスト検証**:
+    - `npm run build` (TypeScript 型チェック + Vite 本番バンドル) 成功。
+    - `pytest tests/` (全 7 件) パス確認。
 
 ## 2. 現在の状態 (Current State)
-- CLI Engine (Phase 0-7) および FastAPI Backend API / SaaS Core (Phase 8-10) が完全稼働。
-- テナント分離・非同期ジョブ・動画アップロード・多言語エクスポートの API 結合テスト実証済み。
+- **全フェーズ（Phase 0 〜 Phase 12 / v1.0 全仕様）の実装・是正・テスト・UI構築が完了**:
+  - Phase 0-7: CLI Engine & AI Pipeline (Evidence-First, Fail-Closed, 意味的照合, 否定文安全性)
+  - Phase 8-10: FastAPI Backend API, SaaS マルチテナントモデル, 非同期 Job サービス
+  - Phase 11-12: React + Vite PWA フロントエンド, 多言語エディタ, Service Worker
 
 ## 3. 次回やること (Next Steps)
-- Phase 11: React + TypeScript + Vite による PWA フロントエンド実装 (`apps/web/`)
-  - ログイン画面 (`/login`)
-  - プロジェクト一覧・作成 (`/projects`, `/projects/new`)
-  - 動画アップロード & ジョブ進捗画面 (`/projects/:id/processing`)
-  - マニュアル確認・編集エディタ (`/projects/:id/manual`)
-  - 多言語翻訳確認・エクスポート (`/projects/:id/translations`, `/projects/:id/export`)
-- Phase 12: SaaS ハードニング & PWA ServiceWorker キャッシュ設定
+- 本番デプロイ（Docker compose / Cloud 環境への展開）
+- 現場ユーザーからのフィードバック収集とモデル最適化
