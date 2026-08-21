@@ -1,12 +1,12 @@
 from worker.schemas.vision import VisionObservation, ActionItem
 
 class RuleBasedVisionProvider:
-    def __init__(self, default_observations: dict[str, dict] | None = None):
-        self.default_observations = default_observations or {}
+    def __init__(self, explicit_observations: dict[str, dict] | None = None):
+        self.explicit_observations = explicit_observations or {}
 
     def analyze_frame(self, frame_id: str, timestamp: float, image_path: str, context: str | None = None) -> VisionObservation:
-        if frame_id in self.default_observations:
-            obs = self.default_observations[frame_id]
+        if frame_id in self.explicit_observations:
+            obs = self.explicit_observations[frame_id]
             actions = [ActionItem(**a) for a in obs.get("actions", [])]
             return VisionObservation(
                 frame_id=frame_id,
@@ -14,15 +14,17 @@ class RuleBasedVisionProvider:
                 objects=obs.get("objects", []),
                 actions=actions,
                 visible_text=obs.get("visible_text", []),
-                uncertain=obs.get("uncertain", [])
+                uncertain=obs.get("uncertain", []),
+                provider_status="success"
             )
         
-        # Default rule-based observation
+        # Fail-closed: Never generate fake objects or actions without explicit evidence
         return VisionObservation(
             frame_id=frame_id,
             timestamp=timestamp,
-            objects=["作業機器"],
-            actions=[ActionItem(actor="作業者", action="操作する", target="作業機器")],
+            objects=[],
+            actions=[],
             visible_text=[],
-            uncertain=[]
+            uncertain=["no_visual_evidence_detected"],
+            provider_status="unprocessed"
         )

@@ -39,6 +39,11 @@ class TranslatedStep(BaseModel):
     instruction: str
     warning: str | None = None
     description: str | None = None
+    equipment: list[str] = Field(default_factory=list)
+    media: StepMedia = Field(default_factory=StepMedia)
+    evidence: StepEvidence
+    evidence_score: float = Field(default=0.0, ge=0.0, le=1.0)
+    status: Literal["generated", "needs_review", "reviewed"] = Field(default="generated")
 
 class TranslatedManual(BaseModel):
     title: str

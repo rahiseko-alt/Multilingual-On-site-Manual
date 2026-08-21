@@ -1,3 +1,4 @@
+from typing import Literal
 from pydantic import BaseModel, Field
 
 class ActionItem(BaseModel):
@@ -12,6 +13,7 @@ class VisionObservation(BaseModel):
     actions: list[ActionItem] = Field(default_factory=list, description="Detected human operations")
     visible_text: list[str] = Field(default_factory=list, description="Visible text/labels")
     uncertain: list[str] = Field(default_factory=list, description="Uncertain or low-confidence observations")
+    provider_status: Literal["success", "failed", "unprocessed"] = Field(default="success")
 
 class VisionData(BaseModel):
     observations: list[VisionObservation] = Field(default_factory=list)

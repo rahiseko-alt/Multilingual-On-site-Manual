@@ -1,6 +1,7 @@
+import base64
 import json
 import os
-import re
+from pathlib import Path
 from worker.schemas.vision import VisionObservation, ActionItem
 
 class LlamaCppVisionProvider:
@@ -27,26 +28,58 @@ class LlamaCppVisionProvider:
             )
         return self._llm
 
+    def _encode_image(self, image_path: str) -> str:
+        with open(image_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode("utf-8")
+
     def analyze_frame(self, frame_id: str, timestamp: float, image_path: str, context: str | None = None) -> VisionObservation:
-        # If model is not configured, fallback gracefully
+        img_path = Path(image_path)
+        if not img_path.exists():
+            return VisionObservation(
+                frame_id=frame_id,
+                timestamp=timestamp,
+                objects=[],
+                actions=[],
+                visible_text=[],
+                uncertain=["image_file_not_found"],
+                provider_status="failed"
+            )
+
         if not self.model_path or not os.path.exists(self.model_path):
-            from worker.providers.vision.rule_provider import RuleBasedVisionProvider
-            return RuleBasedVisionProvider().analyze_frame(frame_id, timestamp, image_path, context)
+            # Fail-closed: Return empty observation if model is unconfigured
+            return VisionObservation(
+                frame_id=frame_id,
+                timestamp=timestamp,
+                objects=[],
+                actions=[],
+                visible_text=[],
+                uncertain=["vision_model_unconfigured"],
+                provider_status="failed"
+            )
 
         prompt = (
             "Analyze the image and return a JSON object with keys 'objects' (list of strings), "
             "'actions' (list of objects with 'actor', 'action', 'target'), 'visible_text' (list of strings), "
-            "and 'uncertain' (list of strings). Do not add operational facts not visible in the frame."
+            "and 'uncertain' (list of strings). Do not hallucinate or add operational facts not visible in the frame."
         )
+
+        b64_img = self._encode_image(str(img_path))
+        data_uri = f"data:image/jpeg;base64,{b64_img}"
 
         for attempt in range(self.max_retries):
             try:
                 llm = self._get_llm()
-                # Run inference
+                # Pass both text prompt and image data to multimodal chat completion
                 response = llm.create_chat_completion(
                     messages=[
-                        {"role": "system", "content": "You are an accurate visual analysis assistant for industrial manuals."},
-                        {"role": "user", "content": prompt}
+                        {"role": "system", "content": "You are an accurate visual analysis assistant for industrial manuals. Output strictly JSON."},
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {"type": "image_url", "image_url": {"url": data_uri}}
+                            ]
+                        }
                     ],
                     response_format={"type": "json_object"}
                 )
@@ -68,10 +101,17 @@ class LlamaCppVisionProvider:
                     objects=parsed.get("objects", []),
                     actions=actions,
                     visible_text=parsed.get("visible_text", []),
-                    uncertain=parsed.get("uncertain", [])
+                    uncertain=parsed.get("uncertain", []),
+                    provider_status="success"
                 )
-            except Exception:
+            except Exception as e:
                 if attempt == self.max_retries - 1:
-                    # Final fallback to rule-based
-                    from worker.providers.vision.rule_provider import RuleBasedVisionProvider
-                    return RuleBasedVisionProvider().analyze_frame(frame_id, timestamp, image_path, context)
+                    return VisionObservation(
+                        frame_id=frame_id,
+                        timestamp=timestamp,
+                        objects=[],
+                        actions=[],
+                        visible_text=[],
+                        uncertain=[f"vision_analysis_error: {str(e)}"],
+                        provider_status="failed"
+                    )
