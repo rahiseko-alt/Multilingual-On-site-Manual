@@ -8,10 +8,12 @@
 ---
 
 ## 1. 今回やったこと (Completed in this session)
-- `template-0811 v3` のルール体系、サブエージェントプロンプト、ドキュメント構造を初期構築。
+- `Video2Doc MultiLang` のコアスキーマ（evidence, frames, scene, transcript, vision）およびワーカーモジュールの初期配置。
+- `.env.example`, `requirements.txt`, `CLAUDE.md` の更新と設定整合性の確保。
+- 全変更のコミットおよびブランチ同期・マージ処理の実行。
 
 ## 2. 現在の状態 (Current State)
-- リポジトリの基本Harness、4層ルール（`AGENTS.md`）、ドキュメント構造（`docs/`）、Sub-Agent定義が設定完了。
+- `master` ブランチにて Video2Doc MultiLang のコアスキーマ群および設定ファイルがコミット・マージ完了。
 
 ## 3. 次回やること (Next Steps)
-- プロジェクト固有の機能実装または要件定義の開始。
+- CLI Engine / Worker パイプラインの実装（Whisper音声文字起こし、シーン検出、フレーム抽出、証拠ベースマニュアル生成）。

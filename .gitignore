@@ -40,3 +40,9 @@ yarn-debug.log*
 !.vscode/extensions.json
 *.swp
 *.swo
+
+# Outputs & Storage
+storage/
+output/
+output_test/
+sample_panel.jpg
