@@ -54,6 +54,21 @@ LEVEL D: REPOSITORY-SPECIFIC RULES (プロジェクト固有ルール)
 10. 最後は実際に動いた事実で証明する (Runtime Evidence)
 ```
 
+### デフォルト鉄板構成 (Default Golden Stack)
+新規構築や技術選定に特段の指定がない場合は、以下の**鉄板構成**をデフォルトとする。
+
+| レイヤー | デフォルト技術スタック (Golden Stack) |
+|---|---|
+| **言語・ランタイム** | TypeScript (Strict Mode) / Node.js LTS (v20+) |
+| **フレームワーク** | Next.js (App Router) / React |
+| **スタイリング・UI** | Tailwind CSS + shadcn/ui + Lucide Icons |
+| **API / バックエンド** | Next.js Route Handlers / Fastify (Python時は FastAPI) |
+| **DB & ORM** | PostgreSQL (本番) / SQLite (PoC/ローカル), Drizzle ORM / Prisma |
+| **バリデーション** | Zod (Schema-First Type Inference) |
+| **テスト & 検証** | Vitest (Unit/Integration) + Playwright (E2E / Runtime Evidence) |
+| **Linter / Formatter**| Biome (または ESLint + Prettier) |
+| **CI / CD** | GitHub Actions |
+
 ### 標準開発Harness (Default Harness)
 
 通常開発の基本フローは以下のみとする。ReviewやFailure Matchは条件付きでのみ追加する。

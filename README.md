@@ -59,18 +59,36 @@
 
 ## 2. ルールの4層構造
 
-すべてのルールは [`AGENTS.md`](./AGENTS.md) に集約・階層化されています。
+すべてにルールは [`AGENTS.md`](./AGENTS.md) に集約・階層化されています。
 
 ```text
 LEVEL A: NON-NEGOTIABLE RULES      (絶対ルール: 秘密・個人情報保護、テスト弱小化禁止など)
-LEVEL B: DEVELOPMENT PRINCIPLES     (開発原則: Search First, Reuse First, Gap駆動)
+LEVEL B: DEVELOPMENT PRINCIPLES     (開発原則: Search First, Reuse First, Gap駆動, 鉄板構成)
 LEVEL C: RISK-BASED WORKFLOW       (リスク別動的プロセス・Sub-Agent定義)
 LEVEL D: REPOSITORY-SPECIFIC RULES  (プロジェクト固有ルール)
 ```
 
 ---
 
-## 3. リスクレベル別の標準フロー
+## 3. デフォルト鉄板構成 (Default Golden Stack)
+
+新規開発や言語・ライブラリ選定で特段の要件がない場合、以下の実績ある**鉄板構成**をデフォルト採用します。
+
+| レイヤー | 技術スタック | 採用理由 |
+|---|---|---|
+| **言語 & ランタイム** | **TypeScript (Strict) / Node.js LTS** | 型安全性・エコシステムの広さ・AI親和性 |
+| **Webフレームワーク** | **Next.js (App Router) / React** | フルスタック統合・高速ルーティング・SSR/RSC |
+| **スタイリング & UI** | **Tailwind CSS + shadcn/ui + Lucide** | コピペ再利用性・デザイン一貫性・オーバーヘッドゼロ |
+| **API / バックエンド** | **Next.js API / Fastify (Python: FastAPI)**| 型安全エンドポイント、高速リクエスト処理 |
+| **DB & ORM** | **PostgreSQL / SQLite, Drizzle ORM (Prisma)**| 型推論スキーマ管理・マイグレーション整合性 |
+| **バリデーション** | **Zod** | スキーマ駆動開発・型定義自動生成 |
+| **テスト & 実証** | **Vitest + Playwright** | 単体・結合高速テスト & ブラウザ実機E2E検証 |
+| **Linter / Formatter**| **Biome (または ESLint + Prettier)** | 超高速静的解析・機械チェック自動化 |
+| **CI / CD** | **GitHub Actions** | 外部事実の自動検証・PR検査 |
+
+---
+
+## 4. リスクレベル別の標準フロー
 
 | Level | 種別 | 対象変更 | 適用フロー |
 |---|---|---|---|
@@ -114,7 +132,19 @@ REALITY (現実)  -->  Independent Verifier (完了報告の再実行とRuntime 
 
 ---
 
-## 7. 評価指標 (Metrics)
+## 7. 登録済みスキル (Workspace Skills: .agents/skills/)
+
+Antigravity等のエージェントが自動またはオンデマンドで利用可能なワークスペーススキルを標準登録しています。
+
+| スキル名 | 格納先 | トリガー・役割 |
+|---|---|---|
+| **`session-checkin`** | [`.agents/skills/session-checkin/SKILL.md`](./.agents/skills/session-checkin/SKILL.md) | **セッション開始時 (`In`)**: `docs/handoff.md` 確認、Git状態確認、failures.md全文読込防止 |
+| **`session-checkout`** | [`.agents/skills/session-checkout/SKILL.md`](./.agents/skills/session-checkout/SKILL.md) | **セッション終了時 (`Out`)**: `docs/handoff.md` 更新、`docs/failures.md` 追記、Gitコミット＆プッシュ |
+| **`failure-match`** | [`.agents/skills/failure-match/SKILL.md`](./.agents/skills/failure-match/SKILL.md) | **Level 2/3・既知リスク領域変更時**: `docs/failures.md` との照合およびGuardrail抽出 |
+
+---
+
+## 8. 評価指標 (Metrics)
 
 本テンプレート自体の改善は、工程数やルール数の増加ではなく以下の指標によって評価します。
 

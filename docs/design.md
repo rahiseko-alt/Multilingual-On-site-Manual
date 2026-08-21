@@ -13,10 +13,19 @@
 ---
 
 ## 2. コア仕様 (Key Specifications)
-- **アーキテクチャ概要**:
-- **技術スタック**:
-- **データモデル / スキーマ方針**:
-- **主要エンドポイント / インターフェース**:
+- **アーキテクチャ概要**: モダンフルスタック構成 / SPA + Server Components
+- **デフォルト鉄板構成 (Golden Stack)**:
+  - **言語・ランタイム**: TypeScript (Strict Mode) / Node.js LTS (v20+)
+  - **フレームワーク**: Next.js (App Router) / React
+  - **スタイリング・UI**: Tailwind CSS + shadcn/ui + Lucide Icons
+  - **API / バックエンド**: Next.js Route Handlers / Fastify (Python時は FastAPI)
+  - **DB & ORM**: PostgreSQL (本番) / SQLite (PoC/ローカル), Drizzle ORM / Prisma
+  - **バリデーション**: Zod
+  - **テスト & 検証**: Vitest (Unit/Integration) + Playwright (E2E)
+  - **Linter / Formatter**: Biome (または ESLint + Prettier)
+  - **CI / CD**: GitHub Actions
+- **データモデル / スキーマ方針**: 
+- **主要エンドポイント / インターフェース**: 
 
 ---
 
