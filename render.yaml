@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: video2doc-multilang
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    region: singapore
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: APP_ENV
+        value: production

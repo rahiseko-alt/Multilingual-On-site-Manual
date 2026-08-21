@@ -2,6 +2,9 @@
 
 CPU対応・PWA型 多言語現場マニュアル自動生成SaaS & AI処理パイプライン。
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+[![Deploy on Fly.io](https://fly.io/badge.svg)](https://fly.io)
+
 現場で撮影した作業動画から音声認識・重要場面抽出・視覚解析を行い、動画内の客観的な根拠（Evidence）を紐付けた構造化データ（`manual_master.json`）を生成し、多言語翻訳（ベトナム語・インドネシア語等）および HTML / Markdown / PDF 出力を行います。
 
 ---
