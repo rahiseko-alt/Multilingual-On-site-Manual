@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="{{ manual.source_language }}">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ manual.title }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 15mm;
+      @bottom-right {
+        content: counter(page) " / " counter(pages);
+        font-size: 9pt;
+        color: #666;
+      }
+    }
+    body {
+      font-family: "Helvetica Neue", Arial, "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
+      color: #1a1a1a;
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+    }
+    .header {
+      border-bottom: 2px solid #2563eb;
+      padding-bottom: 10px;
+      margin-bottom: 25px;
+    }
+    .header h1 {
+      margin: 0 0 5px 0;
+      font-size: 24pt;
+      color: #1e3a8a;
+    }
+    .header .meta {
+      font-size: 10pt;
+      color: #64748b;
+    }
+    .step-card {
+      page-break-inside: avoid;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      background: #ffffff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      overflow: hidden;
+    }
+    .step-header {
+      background: #f8fafc;
+      padding: 10px 16px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+    }
+    .step-badge {
+      background: #2563eb;
+      color: #ffffff;
+      font-weight: bold;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 11pt;
+      margin-right: 12px;
+    }
+    .step-title {
+      font-size: 13pt;
+      font-weight: bold;
+      color: #0f172a;
+      margin: 0;
+    }
+    .step-body {
+      padding: 16px;
+      display: flex;
+      gap: 20px;
+    }
+    .step-image-container {
+      width: 40%;
+      flex-shrink: 0;
+    }
+    .step-image {
+      width: 100%;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      object-fit: cover;
+    }
+    .step-details {
+      width: 60%;
+    }
+    .step-instruction {
+      font-size: 11pt;
+      margin-bottom: 12px;
+      color: #334155;
+    }
+    .warning-box {
+      background: #fffbeb;
+      border-left: 4px solid #f59e0b;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+      border-radius: 2px;
+      font-size: 10pt;
+      color: #92400e;
+    }
+    .equipment-list {
+      font-size: 9.5pt;
+      color: #475569;
+      margin-bottom: 10px;
+    }
+    .equipment-tag {
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-right: 4px;
+    }
+    .evidence-footer {
+      font-size: 8.5pt;
+      color: #94a3b8;
+      border-top: 1px dashed #e2e8f0;
+      padding-top: 6px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>{{ manual.title }}</h1>
+    <div class="meta">言語: {{ manual.source_language }} | 作成日: {{ generated_at }} | Video2Doc MultiLang</div>
+  </div>
+
+  <div class="steps-container">
+    {% for step in manual.steps %}
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-badge">Step {{ step.order }}</span>
+        <span class="step-title">{{ step.title }}</span>
+      </div>
+      <div class="step-body">
+        <div class="step-image-container">
+          {% if step.media.primary_frame_id and frames_map and step.media.primary_frame_id in frames_map %}
+          <img class="step-image" src="{{ frames_map[step.media.primary_frame_id] }}" alt="Step {{ step.order }}">
+          {% else %}
+          <div style="background: #f1f5f9; height: 160px; display: flex; align-items: center; justify-content: center; color: #94a3b8; border-radius: 6px;">No Image</div>
+          {% endif %}
+        </div>
+        <div class="step-details">
+          <div class="step-instruction">{{ step.instruction }}</div>
+          {% if step.warning %}
+          <div class="warning-box">⚠️ <strong>注意:</strong> {{ step.warning }}</div>
+          {% endif %}
+          {% if step.equipment %}
+          <div class="equipment-list">
+            <strong>対象物/機器:</strong>
+            {% for eq in step.equipment %}
+            <span class="equipment-tag">{{ eq }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
+          <div class="evidence-footer">
+            🎬 動画タイムライン: {{ "%.1f"|format(step.evidence.video_start) }}s - {{ "%.1f"|format(step.evidence.video_end) }}s | Evidenceスコア: {{ "%.2f"|format(step.evidence_score) }}
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</body>
+</html>
