@@ -1,14 +1,34 @@
 # CLAUDE.md
 
-This repository follows the **`template-0811 v3`** development harness and 4-tier rule hierarchy.
+## Video2Doc MultiLang Core Rules
 
-Please strictly follow the rules and workflows defined in [`AGENTS.md`](./AGENTS.md).
+This project is an evidence-first video-to-manual system.
 
-## Quick Reference
-- **Core Principle**: Search first -> Reuse first -> Define the Gap -> Build only the Gap -> Mechanical check -> Real verification (Runtime Evidence).
-- **Risk-based flow**:
-  - Level 0 (Trivial): `BUILD` -> `VERIFY`
-  - Level 1 (Normal): `EXPLORE` -> `BUILD` -> `MECHANICAL CHECK` -> `VERIFY`
-  - Level 2 (Important): `EXPLORE` -> `FAILURE MATCH` -> `BUILD` -> `MECHANICAL CHECK` -> `INDEPENDENT CRITIC` -> `WRITER FIX` -> `VERIFY`
-  - Level 3 (Critical): `EXPLORE` -> `FAILURE MATCH` -> `BUILD` -> `MECHANICAL CHECK` -> `INDEPENDENT CRITIC` -> `WRITER FIX` -> `AUTOMATED TEST` -> `RUNTIME VERIFY` -> `INDEPENDENT VERIFIER`
-- **In / Out**: Read `docs/handoff.md` at start; update `docs/handoff.md` and append to `docs/failures.md` (if failure occurred) at finish.
+Never generate operational facts that are not supported by transcript or visual evidence.
+
+The canonical artifact is `manual_master.json`.
+
+PDF, HTML and Markdown are derived artifacts.
+
+Do not couple API routes directly to AI models.
+
+All AI models must be accessed through provider interfaces (`TranscriptionProvider`, `VisionProvider`, `TranslationProvider`, `StorageProvider`).
+
+The development environment must support CPU-only execution.
+
+Reuse mature OSS before implementing equivalent functionality.
+
+Implement one phase at a time (CLI Engine -> API -> Worker -> DB/Storage -> PWA -> SaaS).
+
+Do not implement future features unless explicitly requested.
+
+Every generated manual step must preserve references to its source video evidence (`video_start`, `video_end`, `transcript_ids`, `frame_ids`).
+
+Do not mark a phase complete only because tests pass. Run the actual pipeline against fixture media and inspect the generated artifacts.
+
+---
+
+## Development Workflow
+- Follow the 4-tier rule hierarchy in `AGENTS.md`.
+- Session in: Read `docs/handoff.md`, check git status.
+- Session out: Update `docs/handoff.md`, append to `docs/failures.md` if any failure occurred.
